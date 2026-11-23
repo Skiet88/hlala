@@ -18,7 +18,7 @@ has the order of work.
 5. If work reveals the order below is wrong, say so and propose the change. Do
    not silently reorder.
 
-Last updated: 2026-11-23, end of the planning chat. Backend written, never built.
+Last updated: 2026-11-23, Phase 0 session. Backend builds, all 40 tests pass, CI added, PR to main open.
 
 ## Why this order
 
@@ -30,13 +30,18 @@ The frontend can start once sign in exists, in parallel with phases 3 to 5.
 
 ---
 
-## Phase 0: Make it build — status: NEXT
+## Phase 0: Make it build — status: IN REVIEW (waiting on the owner to merge the PR)
 
-- [ ] `cd backend && mvn test` passes. Fix wiring or mapping issues; do not
-      redesign. If a fix would change a design decision in CLAUDE.md, ask first.
-- [ ] App starts with `mvn spring-boot:run`; seeded admin ids print in the log.
-- [ ] Walk the journey by hand once (or via `TenancyFlowIntegrationTest`).
-- [ ] GitHub Actions workflow running `mvn test` on every push and PR.
+- [x] `cd backend && mvn test` passes. All 40 tests passed on the first build;
+      no wiring or mapping fixes were needed.
+- [x] App starts with `mvn spring-boot:run`; seeded admin ids print in the log.
+      Excluded `UserDetailsServiceAutoConfiguration` so Spring no longer creates
+      an unused in memory user and prints its password at startup.
+- [x] Walk the journey by hand once: list, publish, check, apply, accept, start
+      tenancy, pay, move in, rent, handover, two admin release, audit trail, plus
+      the refusals (tenant approving, same admin twice, no header).
+- [x] GitHub Actions workflow running `mvn test` on every push and PR
+      (`.github/workflows/backend-ci.yml`, JDK 17).
 - [ ] Open a PR from `feature/backend-spring-boot` to `main`; owner merges.
 
 Done when: tests are green locally and in CI, and the branch is merged.
@@ -60,6 +65,11 @@ Done when: the app runs on Postgres from migrations alone.
 - [ ] Rate limit OTP requests and attempts per phone and per IP; lock after
       repeated failures. SIM swap fraud is real here, so treat this as security work.
 - [ ] Mark `User.phoneVerified` on success.
+- [ ] `application.yml` sets `spring.profiles.active: local` as the default, so
+      starting the app with no profile turns on the dev header (anyone can act
+      as any user id). Make prod safe by default: no default profile, or a
+      startup check that refuses dev auth unless the profile is exactly `local`.
+      Found in Phase 0.
 - [ ] **OWNER DECISION:** SMS provider (cost per message matters at this scale).
 
 Done when: no protected endpoint can be reached without a verified phone, and

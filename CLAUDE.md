@@ -125,13 +125,14 @@ Payout rules:
 ## Current state
 
 - Branch `feature/backend-spring-boot` holds the backend. `main` has only a README.
-- **Never built with Maven yet.** It was written in an environment that could not
-  download dependencies. What was verified: every layer except `SecurityConfig`
-  type checked against stand in annotations, and 60 end to end checks passed by
-  wiring the real services over in memory repositories. The JUnit tests, the
-  Spring context, H2 and `SecurityConfig` have never run.
-- **What comes next:** see ROADMAP.md. The current phase is the first one not
-  marked DONE (Phase 0, make it build, as of 2026-11-23).
+- Builds with Maven. All 40 tests pass (JUnit, Spring context, H2,
+  `SecurityConfig`), and the full journey was walked by hand against the running
+  app. CI runs `mvn test` on JDK 17 for every push and PR
+  (`.github/workflows/backend-ci.yml`).
+- Until the backend PR is merged, keep pushing backend work to
+  `feature/backend-spring-boot` (owner's instruction).
+- **What comes next:** see ROADMAP.md. Phase 0 is in review (PR to `main`
+  open); once merged, Phase 1 (real database) is next.
 
 ## Running locally
 
