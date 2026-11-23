@@ -70,6 +70,8 @@ class EscrowServiceImplTest {
                 Instant.now().minusSeconds(5)));
 
         when(holds.findById(holdId)).thenAnswer(i -> Optional.of(current));
+        // approve() reads the hold through the locking finder; same data in this fake.
+        when(holds.findForDecisionById(holdId)).thenAnswer(i -> Optional.of(current));
         when(holds.save(any(DepositHold.class))).thenAnswer(i -> current = i.getArgument(0));
         when(events.findByDepositHoldIdOrderByOccurredAtAsc(holdId)).thenAnswer(i -> List.copyOf(savedEvents));
         when(events.save(any(DepositHoldEvent.class))).thenAnswer(i -> {

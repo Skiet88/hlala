@@ -4,8 +4,13 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hlala.config.DevHeaderAuthenticationFilter;
 import com.hlala.domain.AdminProfile;
+import com.hlala.domain.Enums;
 import com.hlala.repository.AdminProfileRepository;
 import com.hlala.repository.CheckerProfileRepository;
+import com.hlala.repository.LeaseRepository;
+import com.hlala.domain.Lease;
+import com.hlala.service.Actor;
+import com.hlala.service.EscrowService;
 import com.hlala.support.PostgresContainerConfig;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -13,6 +18,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
@@ -21,7 +27,12 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.ThreadLocalRandom;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -44,6 +55,8 @@ class TenancyFlowIntegrationTest {
     @Autowired ObjectMapper json;
     @Autowired AdminProfileRepository admins;
     @Autowired CheckerProfileRepository checkers;
+    @Autowired EscrowService escrow;
+    @Autowired LeaseRepository leaseRows;
 
     private UUID adminA;
     private UUID adminB;
@@ -128,6 +141,65 @@ class TenancyFlowIntegrationTest {
 
         JsonNode audit = read(call(adminA, get("/admin/deposit-holds/" + t.holdId), null).andExpect(status().isOk()));
         assertThat(audit.get("history").size()).isGreaterThanOrEqualTo(5);
+    }
+
+    /**
+     * Two admins approving the same payout at the same moment. Without a lock
+     * on the hold, each transaction sees only its own approval, neither
+     * releases the money, and both are then refused as "already approved".
+     * With the lock, one of them conflicts, retries, sees both approvals and
+     * releases. Repeated because a race may not show on a single attempt.
+     */
+    @Test
+    void simultaneousApprovalsStillReleaseTheDeposit() throws Exception {
+        ExecutorService pool = Executors.newFixedThreadPool(2);
+        try {
+            for (int i = 0; i < 40; i++) {
+                Tenancy t = tenancyThroughMoveIn(false);
+                call(t.tenant, post("/deposit-holds/" + t.holdId + "/confirm-handover"), null)
+                        .andExpect(status().isOk());
+                UUID holdId = UUID.fromString(t.holdId);
+                CyclicBarrier together = new CyclicBarrier(2);
+                Future<?> a = pool.submit(() -> approveWithOneRetry(adminA, holdId, together));
+                Future<?> b = pool.submit(() -> approveWithOneRetry(adminB, holdId, together));
+                a.get();
+                b.get();
+                assertThat(state(t)).as("attempt %d", i).isEqualTo("RELEASED");
+            }
+        } finally {
+            pool.shutdownNow();
+        }
+    }
+
+    /**
+     * Tenant and landlord sign from the same starting copy of the lease. The
+     * second save is refused rather than silently wiping the first signature.
+     */
+    @Test
+    void staleCopyCannotOverwriteANewerLease() throws Exception {
+        Tenancy t = tenancyThroughMoveIn(false);
+        UUID leaseId = UUID.fromString(t.leaseId);
+        Lease seenByTenant = leaseRows.findById(leaseId).orElseThrow();
+        Lease seenByLandlord = leaseRows.findById(leaseId).orElseThrow();
+
+        leaseRows.save(seenByTenant.withTenantSignature(Enums.SignatureStatus.SIGNED));
+
+        org.assertj.core.api.Assertions.assertThatThrownBy(() ->
+                        leaseRows.save(seenByLandlord.withLandlordSignature(Enums.SignatureStatus.SIGNED)))
+                .isInstanceOf(OptimisticLockingFailureException.class);
+        assertThat(leaseRows.findById(leaseId).orElseThrow().getTenantSignature())
+                .isEqualTo(Enums.SignatureStatus.SIGNED);
+    }
+
+    private Void approveWithOneRetry(UUID adminUserId, UUID holdId, CyclicBarrier together) throws Exception {
+        Actor admin = new Actor(adminUserId, Set.of(Enums.Role.ADMIN));
+        together.await();
+        try {
+            escrow.approve(admin, holdId);
+        } catch (OptimisticLockingFailureException conflict) {
+            escrow.approve(admin, holdId); // what the client does on a 409
+        }
+        return null;
     }
 
     @Test

@@ -19,6 +19,15 @@ public class Dispute {
     @Id
     private UUID id;
 
+    /**
+     * Optimistic lock. Every update checks it, so two requests that read the
+     * same row cannot both write it; the second gets a conflict and retries.
+     * Copies made by the with/resolved methods keep it, which is what makes
+     * the check work with immutable entities.
+     */
+    @Version
+    private Long version;
+
     @Column(nullable = false)
     private UUID depositHoldId;
 
@@ -62,13 +71,18 @@ public class Dispute {
     public Dispute withEvidence(List<URI> more) {
         List<URI> combined = new java.util.ArrayList<>(evidenceRefs);
         combined.addAll(more);
-        return new Dispute(id, depositHoldId, raisedByUserId, status, resolution,
-                List.copyOf(combined), openedAt, resolvedAt);
+        return sameVersion(new Dispute(id, depositHoldId, raisedByUserId, status, resolution,
+                List.copyOf(combined), openedAt, resolvedAt));
     }
 
     public Dispute resolved(Enums.DisputeResolution resolution, Instant resolvedAt) {
-        return new Dispute(id, depositHoldId, raisedByUserId, Enums.DisputeStatus.RESOLVED,
-                resolution, List.copyOf(evidenceRefs), openedAt, resolvedAt);
+        return sameVersion(new Dispute(id, depositHoldId, raisedByUserId, Enums.DisputeStatus.RESOLVED,
+                resolution, List.copyOf(evidenceRefs), openedAt, resolvedAt));
+    }
+
+    private Dispute sameVersion(Dispute copy) {
+        copy.version = this.version;
+        return copy;
     }
 
     public UUID getId() {

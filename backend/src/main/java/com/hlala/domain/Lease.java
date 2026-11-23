@@ -18,6 +18,15 @@ public class Lease {
     @Id
     private UUID id;
 
+    /**
+     * Optimistic lock. Every update checks it, so two requests that read the
+     * same row cannot both write it; the second gets a conflict and retries.
+     * Copies made by the with/resolved methods keep it, which is what makes
+     * the check work with immutable entities.
+     */
+    @Version
+    private Long version;
+
     @Column(nullable = false)
     private UUID roomId;
 
@@ -68,18 +77,23 @@ public class Lease {
     }
 
     public Lease withTenantSignature(Enums.SignatureStatus status) {
-        return new Lease(id, roomId, tenantId, landlordId, monthlyRent,
-                startDate, endDate, language, status, landlordSignature);
+        return sameVersion(new Lease(id, roomId, tenantId, landlordId, monthlyRent,
+                startDate, endDate, language, status, landlordSignature));
     }
 
     public Lease withLandlordSignature(Enums.SignatureStatus status) {
-        return new Lease(id, roomId, tenantId, landlordId, monthlyRent,
-                startDate, endDate, language, tenantSignature, status);
+        return sameVersion(new Lease(id, roomId, tenantId, landlordId, monthlyRent,
+                startDate, endDate, language, tenantSignature, status));
     }
 
     public boolean isFullySigned() {
         return tenantSignature == Enums.SignatureStatus.SIGNED
                 && landlordSignature == Enums.SignatureStatus.SIGNED;
+    }
+
+    private Lease sameVersion(Lease copy) {
+        copy.version = this.version;
+        return copy;
     }
 
     public UUID getId() {

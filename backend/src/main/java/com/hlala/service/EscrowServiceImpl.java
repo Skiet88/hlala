@@ -127,7 +127,12 @@ public class EscrowServiceImpl implements EscrowService {
     @Transactional
     public AdminApproval approve(Actor admin, UUID holdId) {
         AdminProfile adminProfile = lookup.admin(admin);
-        DepositHold hold = get(holdId);
+        // Locked for the decision: an approval writes a new row but not the hold,
+        // so without this two admins approving at once would each see only their
+        // own approval and neither would release. With it, the second commit
+        // conflicts and the admin retries, now seeing both approvals.
+        DepositHold hold = holds.findForDecisionById(holdId)
+                .orElseThrow(() -> new NotFoundException("Deposit hold not found"));
         Lease lease = leaseOf(hold);
 
         if (lookup.isPartyTo(admin, lease)) {
