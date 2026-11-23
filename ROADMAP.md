@@ -18,7 +18,7 @@ has the order of work.
 5. If work reveals the order below is wrong, say so and propose the change. Do
    not silently reorder.
 
-Last updated: 2026-11-23, Phase 0 session. Backend builds, all 40 tests pass, CI added, PR to main open.
+Last updated: 2026-11-23, Phase 0 done. Backend merged to main with CI green. Phase 1 is next.
 
 ## Why this order
 
@@ -30,7 +30,7 @@ The frontend can start once sign in exists, in parallel with phases 3 to 5.
 
 ---
 
-## Phase 0: Make it build — status: IN REVIEW (waiting on the owner to merge the PR)
+## Phase 0: Make it build — status: DONE
 
 - [x] `cd backend && mvn test` passes. All 40 tests passed on the first build;
       no wiring or mapping fixes were needed.
@@ -42,11 +42,11 @@ The frontend can start once sign in exists, in parallel with phases 3 to 5.
       the refusals (tenant approving, same admin twice, no header).
 - [x] GitHub Actions workflow running `mvn test` on every push and PR
       (`.github/workflows/backend-ci.yml`, JDK 17).
-- [ ] Open a PR from `feature/backend-spring-boot` to `main`; owner merges.
+- [x] Open a PR from `feature/backend-spring-boot` to `main`; owner merges (PR #2, merged 2026-11-23).
 
 Done when: tests are green locally and in CI, and the branch is merged.
 
-## Phase 1: Real database — status: TODO
+## Phase 1: Real database — status: NEXT
 
 - [ ] Flyway migrations for the current schema; switch local and prod away from
       `ddl-auto=update` (prod already uses `validate`).

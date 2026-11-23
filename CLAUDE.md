@@ -124,15 +124,16 @@ Payout rules:
 
 ## Current state
 
-- Branch `feature/backend-spring-boot` holds the backend. `main` has only a README.
 - Builds with Maven. All 40 tests pass (JUnit, Spring context, H2,
   `SecurityConfig`), and the full journey was walked by hand against the running
   app. CI runs `mvn test` on JDK 17 for every push and PR
   (`.github/workflows/backend-ci.yml`).
 - Until the backend PR is merged, keep pushing backend work to
   `feature/backend-spring-boot` (owner's instruction).
-- **What comes next:** see ROADMAP.md. Phase 0 is in review (PR to `main`
-  open); once merged, Phase 1 (real database) is next.
+- The backend is merged into `main` (PR #2). Backend work still goes on
+  `feature/backend-spring-boot`, kept in step with `main`, with a PR per phase.
+- **What comes next:** see ROADMAP.md. Phase 0 is DONE; Phase 1 (real
+  database) is next.
 
 ## Running locally
 
