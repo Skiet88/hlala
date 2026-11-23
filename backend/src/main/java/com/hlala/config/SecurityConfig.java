@@ -39,15 +39,11 @@ public class SecurityConfig {
                 .httpBasic(AbstractHttpConfigurer::disable)
                 .formLogin(AbstractHttpConfigurer::disable)
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .headers(h -> h.frameOptions(f -> f.sameOrigin())) // H2 console in local
                 .exceptionHandling(e -> e.authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)))
                 .authorizeHttpRequests(auth -> auth
-                        // Explicit Ant matchers: with the H2 console there are two servlets,
-                        // and Spring Security rejects bare string patterns in that setup.
                         .requestMatchers(antMatcher(HttpMethod.POST, "/accounts")).permitAll()
                         .requestMatchers(antMatcher(HttpMethod.GET, "/listings")).permitAll()
                         .requestMatchers(antMatcher(HttpMethod.GET, "/listings/*")).permitAll()
-                        .requestMatchers(antMatcher("/h2-console/**")).permitAll()
                         .requestMatchers(antMatcher("/error")).permitAll()
                         .anyRequest().authenticated());
 

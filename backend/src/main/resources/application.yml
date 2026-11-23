@@ -8,24 +8,25 @@ spring:
     # Off: every DTO is built from data loaded inside the service transaction,
     # so nothing silently depends on lazy loading during view rendering.
     open-in-view: false
+    hibernate:
+      # Flyway owns the schema (src/main/resources/db/migration). Hibernate only
+      # checks that the entities match it and refuses to start if they do not.
+      ddl-auto: validate
 
 ---
 spring:
   config:
     activate:
       on-profile: local
+  # The database is Supabase Postgres; nothing runs on this machine. Set these
+  # from the Supabase project's connection settings. Use the session pooler
+  # (port 5432), not the transaction pooler (6543), which breaks the prepared
+  # statements the JDBC driver uses, for example:
+  #   jdbc:postgresql://aws-0-<region>.pooler.supabase.com:5432/postgres?sslmode=require
   datasource:
-    url: jdbc:h2:mem:hlala;DB_CLOSE_DELAY=-1
-    driver-class-name: org.h2.Driver
-    username: sa
-    password:
-  jpa:
-    hibernate:
-      ddl-auto: update
-    show-sql: false
-  h2:
-    console:
-      enabled: true
+    url: ${DATABASE_URL}
+    username: ${DATABASE_USERNAME}
+    password: ${DATABASE_PASSWORD}
 
 hlala:
   dev-auth:
@@ -41,7 +42,3 @@ spring:
     url: ${DATABASE_URL}
     username: ${DATABASE_USERNAME}
     password: ${DATABASE_PASSWORD}
-  jpa:
-    hibernate:
-      ddl-auto: validate
-    show-sql: false

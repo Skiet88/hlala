@@ -22,6 +22,15 @@ public class DepositHold {
     @Id
     private UUID id;
 
+    /**
+     * Optimistic lock. Every update checks it, so two requests that read the
+     * same row cannot both write it; the second gets a conflict and retries.
+     * Copies made by the with/resolved methods keep it, which is what makes
+     * the check work with immutable entities.
+     */
+    @Version
+    private Long version;
+
     @Column(nullable = false)
     private UUID leaseId;
 
@@ -57,11 +66,16 @@ public class DepositHold {
      * saving the result is what makes the state change durable.
      */
     public DepositHold withState(Enums.DepositHoldState newState) {
-        return new DepositHold(id, leaseId, amount, newState, handoverConfirmedAt, createdAt);
+        return sameVersion(new DepositHold(id, leaseId, amount, newState, handoverConfirmedAt, createdAt));
     }
 
     public DepositHold withHandoverConfirmed(Instant at) {
-        return new DepositHold(id, leaseId, amount, state, at, createdAt);
+        return sameVersion(new DepositHold(id, leaseId, amount, state, at, createdAt));
+    }
+
+    private DepositHold sameVersion(DepositHold copy) {
+        copy.version = this.version;
+        return copy;
     }
 
     public UUID getId() {

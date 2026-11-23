@@ -18,7 +18,7 @@ has the order of work.
 5. If work reveals the order below is wrong, say so and propose the change. Do
    not silently reorder.
 
-Last updated: 2026-11-23, Phase 0 session. Backend builds, all 40 tests pass, CI added, PR to main open.
+Last updated: 2026-11-23, Phase 1 built: Postgres (Supabase), Flyway V1 to V4, optimistic locking, row level security. PR #3 open; app hosting still open.
 
 ## Why this order
 
@@ -30,7 +30,7 @@ The frontend can start once sign in exists, in parallel with phases 3 to 5.
 
 ---
 
-## Phase 0: Make it build — status: IN REVIEW (waiting on the owner to merge the PR)
+## Phase 0: Make it build — status: DONE
 
 - [x] `cd backend && mvn test` passes. All 40 tests passed on the first build;
       no wiring or mapping fixes were needed.
@@ -42,17 +42,30 @@ The frontend can start once sign in exists, in parallel with phases 3 to 5.
       the refusals (tenant approving, same admin twice, no header).
 - [x] GitHub Actions workflow running `mvn test` on every push and PR
       (`.github/workflows/backend-ci.yml`, JDK 17).
-- [ ] Open a PR from `feature/backend-spring-boot` to `main`; owner merges.
+- [x] Open a PR from `feature/backend-spring-boot` to `main`; owner merges (PR #2, merged 2026-11-23).
 
 Done when: tests are green locally and in CI, and the branch is merged.
 
-## Phase 1: Real database — status: TODO
+## Phase 1: Real database — status: IN REVIEW (PR #3 open; Supabase hookup and app hosting still open)
 
-- [ ] Flyway migrations for the current schema; switch local and prod away from
-      `ddl-auto=update` (prod already uses `validate`).
-- [ ] Docker Compose with Postgres for local work; keep H2 only for tests.
-- [ ] Indexes for the hot queries (listings by status, holds by lease, events by hold).
-- [ ] **OWNER DECISION:** hosting for the database and app (Render is already
+- [x] Flyway migrations for the current schema; every profile now runs
+      `ddl-auto=validate`. V1 baseline (foreign keys, uniqueness and CHECK rules),
+      V2 indexes, V3 version columns.
+- [x] No local database: the owner uses Supabase and runs nothing locally.
+      Tests run in CI on a Testcontainers Postgres. No test needed H2, so it is
+      gone. (A docker-compose file was added and then removed in this phase.)
+- [x] Indexes for every repository lookup, not only the three hot ones.
+- [x] Found in this phase: two admins approving at the same moment could leave
+      a deposit stuck. Fixed with optimistic locking in its own commit, so the
+      owner can drop it if he prefers (he said continue on the plan); a test
+      reproduces the race.
+- [x] **OWNER DECISION, database:** Supabase Postgres.
+- [x] Row level security on every table (V4) so Supabase's Data API cannot
+      reach the data; a test enforces it for future tables.
+- [ ] Point the app at the Supabase project and confirm V1 to V4 apply there;
+      turn off the Data API in the dashboard.
+      Match the Testcontainers Postgres version to the project's version.
+- [ ] **OWNER DECISION:** where the app itself is hosted (Render is already
       connected to his account; other options are fine).
 
 Done when: the app runs on Postgres from migrations alone.
@@ -70,6 +83,8 @@ Done when: the app runs on Postgres from migrations alone.
       as any user id). Make prod safe by default: no default profile, or a
       startup check that refuses dev auth unless the profile is exactly `local`.
       Found in Phase 0.
+- [ ] Clients must handle 409 "try again" on writes (optimistic locking). Note
+      for the frontend in Phase 7 as well.
 - [ ] **OWNER DECISION:** SMS provider (cost per message matters at this scale).
 
 Done when: no protected endpoint can be reached without a verified phone, and
