@@ -18,7 +18,7 @@ has the order of work.
 5. If work reveals the order below is wrong, say so and propose the change. Do
    not silently reorder.
 
-Last updated: 2026-11-23, Phase 0 done. Backend merged to main with CI green. Phase 1 is next.
+Last updated: 2026-11-23, Phase 1 built: Postgres, Flyway V1 to V3, optimistic locking. PR open; hosting decision pending.
 
 ## Why this order
 
@@ -46,12 +46,17 @@ The frontend can start once sign in exists, in parallel with phases 3 to 5.
 
 Done when: tests are green locally and in CI, and the branch is merged.
 
-## Phase 1: Real database — status: NEXT
+## Phase 1: Real database — status: IN REVIEW (PR open; hosting decision still open)
 
-- [ ] Flyway migrations for the current schema; switch local and prod away from
-      `ddl-auto=update` (prod already uses `validate`).
-- [ ] Docker Compose with Postgres for local work; keep H2 only for tests.
-- [ ] Indexes for the hot queries (listings by status, holds by lease, events by hold).
+- [x] Flyway migrations for the current schema; every profile now runs
+      `ddl-auto=validate`. V1 baseline (foreign keys, uniqueness and CHECK rules),
+      V2 indexes, V3 version columns.
+- [x] Docker Compose with Postgres for local work. No test needed H2 (unit tests
+      use fakes, the Spring test uses Testcontainers Postgres), so H2 is gone.
+- [x] Indexes for every repository lookup, not only the three hot ones.
+- [x] Found in this phase: two admins approving at the same moment could leave
+      a deposit stuck. Fixed with optimistic locking (owner agreed); a test
+      reproduces the race.
 - [ ] **OWNER DECISION:** hosting for the database and app (Render is already
       connected to his account; other options are fine).
 
@@ -70,6 +75,8 @@ Done when: the app runs on Postgres from migrations alone.
       as any user id). Make prod safe by default: no default profile, or a
       startup check that refuses dev auth unless the profile is exactly `local`.
       Found in Phase 0.
+- [ ] Clients must handle 409 "try again" on writes (optimistic locking). Note
+      for the frontend in Phase 7 as well.
 - [ ] **OWNER DECISION:** SMS provider (cost per message matters at this scale).
 
 Done when: no protected endpoint can be reached without a verified phone, and

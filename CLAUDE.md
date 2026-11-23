@@ -121,6 +121,18 @@ Payout rules:
 - Public listing views hide the exact GPS pin; a tenant gets it after booking a viewing.
 - Application verification ticks start false and are never self asserted.
 - Rent can only be recorded while the hold is ACTIVE or DISPUTED.
+- Flyway owns the schema (`backend/src/main/resources/db/migration`). Hibernate
+  only validates, in every profile. Never edit an applied migration; add a new
+  `V<n>__...sql`. Id columns: `tenant_id`, `landlord_id`, `checker_id` point at
+  profile rows; `*_user_id`, `author_id`, `about_user_id` point at `app_user`.
+- The database repeats key rules as constraints: one hold per lease, one open
+  dispute per hold, one pending application per tenant per listing, one review
+  per side per lease. Violations return 409.
+- Optimistic locking: `DepositHold`, `Dispute` and `Lease` have `@Version`, and
+  their `withX()` copies carry the version, so a write from a stale read fails.
+  `approve()` loads the hold with `OPTIMISTIC_FORCE_INCREMENT` because an
+  approval decides about the hold without changing it. A conflict returns 409
+  and the client retries.
 
 ## Current state
 
@@ -132,19 +144,26 @@ Payout rules:
   `feature/backend-spring-boot` (owner's instruction).
 - The backend is merged into `main` (PR #2). Backend work still goes on
   `feature/backend-spring-boot`, kept in step with `main`, with a PR per phase.
-- **What comes next:** see ROADMAP.md. Phase 0 is DONE; Phase 1 (real
-  database) is next.
+- Runs on Postgres from Flyway migrations alone (V1 to V3). 42 tests pass,
+  including a Testcontainers Postgres integration test and concurrency tests.
+- Testcontainers is pinned to 1.21.4 in the pom: the version Boot 3.3 brings
+  cannot talk to Docker 29 or newer.
+- **What comes next:** see ROADMAP.md. Phase 1 is in review (PR open); the
+  hosting decision is still the owner's. Phase 2 (real sign in) follows.
 
 ## Running locally
 
 ```
 cd backend
-mvn test
+docker compose up -d     # Postgres 16 on localhost:5432
+mvn test                 # needs Docker: the Spring test starts its own Postgres
 mvn spring-boot:run
 ```
 
-The `local` profile uses in memory H2 and seeds two admins and one checker; their
-ids are printed in the startup log. Send a user id in the `X-Dev-User-Id` header
+The `local` profile uses the compose Postgres (override with `DATABASE_URL`,
+`DATABASE_USERNAME`, `DATABASE_PASSWORD`), runs the migrations on startup, and
+seeds two admins and one checker the first time; their ids are printed in the
+startup log. Data persists between runs; `docker compose down -v` wipes it. Send a user id in the `X-Dev-User-Id` header
 to act as that user (`DevHeaderAuthenticationFilter`, local only). In `prod`
 nothing authenticates yet, so protected endpoints return 401 by design.
 `TenancyFlowIntegrationTest` shows the full API journey.
