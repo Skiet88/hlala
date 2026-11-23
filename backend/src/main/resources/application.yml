@@ -18,12 +18,15 @@ spring:
   config:
     activate:
       on-profile: local
-  # Postgres from backend/docker-compose.yml. The defaults match that file;
-  # override with the environment variables if your database lives elsewhere.
+  # The database is Supabase Postgres; nothing runs on this machine. Set these
+  # from the Supabase project's connection settings. Use the session pooler
+  # (port 5432), not the transaction pooler (6543), which breaks the prepared
+  # statements the JDBC driver uses, for example:
+  #   jdbc:postgresql://aws-0-<region>.pooler.supabase.com:5432/postgres?sslmode=require
   datasource:
-    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/hlala}
-    username: ${DATABASE_USERNAME:hlala}
-    password: ${DATABASE_PASSWORD:hlala}
+    url: ${DATABASE_URL}
+    username: ${DATABASE_USERNAME}
+    password: ${DATABASE_PASSWORD}
 
 hlala:
   dev-auth:
