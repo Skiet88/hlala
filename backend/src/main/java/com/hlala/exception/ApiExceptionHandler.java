@@ -2,6 +2,7 @@ package com.hlala.exception;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
@@ -68,6 +69,17 @@ public class ApiExceptionHandler {
     @ExceptionHandler({IllegalTransitionException.class, ApprovalNotSatisfiedException.class})
     public ResponseEntity<Object> handleConflict(RuntimeException ex) {
         return body(HttpStatus.CONFLICT, ex.getMessage());
+    }
+
+    /**
+     * A database rule caught something the service checks missed, usually two
+     * requests racing (for example two pending applications for one listing).
+     * The constraint name is logged but never sent to the client.
+     */
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<Object> handleIntegrity(DataIntegrityViolationException ex) {
+        log.warn("Integrity violation: {}", ex.getMostSpecificCause().getMessage());
+        return body(HttpStatus.CONFLICT, "This conflicts with existing data");
     }
 
     @ExceptionHandler(Exception.class)

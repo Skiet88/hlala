@@ -1,0 +1,22 @@
+# Local Postgres for development. Start it with `docker compose up -d` from
+# this folder; the local profile in application.yml connects with these values.
+# Data survives restarts in the named volume; `docker compose down -v` wipes it.
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: hlala
+      POSTGRES_USER: hlala
+      POSTGRES_PASSWORD: hlala
+    ports:
+      - "5432:5432"
+    volumes:
+      - hlala-pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hlala -d hlala"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  hlala-pg:
