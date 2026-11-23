@@ -55,7 +55,8 @@ Done when: tests are green locally and in CI, and the branch is merged.
       use fakes, the Spring test uses Testcontainers Postgres), so H2 is gone.
 - [x] Indexes for every repository lookup, not only the three hot ones.
 - [x] Found in this phase: two admins approving at the same moment could leave
-      a deposit stuck. Fixed with optimistic locking (owner agreed); a test
+      a deposit stuck. Fixed with optimistic locking in its own commit, so the
+      owner can drop it if he prefers (he said continue on the plan); a test
       reproduces the race.
 - [ ] **OWNER DECISION:** hosting for the database and app (Render is already
       connected to his account; other options are fine).
