@@ -1,7 +1,9 @@
 # Hlala: project context
 
-Read this first. It carries over everything decided in the planning chat where this
-project was designed, so you do not need to ask the owner to re-explain it.
+Read this first, then ROADMAP.md. This file carries over everything decided in
+the planning chat where this project was designed, so you do not need to ask the
+owner to re-explain it. ROADMAP.md says what phase the project is in and what
+comes next, so you can lead the work forward without being told the next step.
 
 ## Owner and how to work with him
 
@@ -128,8 +130,8 @@ Payout rules:
   type checked against stand in annotations, and 60 end to end checks passed by
   wiring the real services over in memory repositories. The JUnit tests, the
   Spring context, H2 and `SecurityConfig` have never run.
-- **First job:** `cd backend && mvn test`, then fix whatever fails. Expect small
-  wiring or mapping issues, not design problems.
+- **What comes next:** see ROADMAP.md. The current phase is the first one not
+  marked DONE (Phase 0, make it build, as of 2026-11-23).
 
 ## Running locally
 
@@ -147,6 +149,11 @@ nothing authenticates yet, so protected endpoints return 401 by design.
 
 ## Not built yet
 
-Phone OTP sign in and tokens, a payment provider (an admin endpoint stands in
-for its webhook), photo and voice note storage, SMS alerts, in app chat, the
-Wanted board, and the frontend.
+Tracked phase by phase in ROADMAP.md, including known gaps and the decisions
+that belong to the owner.
+
+## End of every session
+
+Update ROADMAP.md (ticks, phase status, new decisions, "Last updated") and this
+file if any decision or the current state changed. Then commit and push both as
+the owner. This is how the next session knows what happened.
