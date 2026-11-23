@@ -18,7 +18,7 @@ has the order of work.
 5. If work reveals the order below is wrong, say so and propose the change. Do
    not silently reorder.
 
-Last updated: 2026-11-23, Phase 1 built: Postgres, Flyway V1 to V3, optimistic locking. PR open; hosting decision pending.
+Last updated: 2026-11-23, Phase 1 built: Postgres (Supabase), Flyway V1 to V4, optimistic locking, row level security. PR #3 open; app hosting still open.
 
 ## Why this order
 
@@ -46,19 +46,26 @@ The frontend can start once sign in exists, in parallel with phases 3 to 5.
 
 Done when: tests are green locally and in CI, and the branch is merged.
 
-## Phase 1: Real database — status: IN REVIEW (PR open; hosting decision still open)
+## Phase 1: Real database — status: IN REVIEW (PR #3 open; Supabase hookup and app hosting still open)
 
 - [x] Flyway migrations for the current schema; every profile now runs
       `ddl-auto=validate`. V1 baseline (foreign keys, uniqueness and CHECK rules),
       V2 indexes, V3 version columns.
-- [x] Docker Compose with Postgres for local work. No test needed H2 (unit tests
-      use fakes, the Spring test uses Testcontainers Postgres), so H2 is gone.
+- [x] No local database: the owner uses Supabase and runs nothing locally.
+      Tests run in CI on a Testcontainers Postgres. No test needed H2, so it is
+      gone. (A docker-compose file was added and then removed in this phase.)
 - [x] Indexes for every repository lookup, not only the three hot ones.
 - [x] Found in this phase: two admins approving at the same moment could leave
       a deposit stuck. Fixed with optimistic locking in its own commit, so the
       owner can drop it if he prefers (he said continue on the plan); a test
       reproduces the race.
-- [ ] **OWNER DECISION:** hosting for the database and app (Render is already
+- [x] **OWNER DECISION, database:** Supabase Postgres.
+- [x] Row level security on every table (V4) so Supabase's Data API cannot
+      reach the data; a test enforces it for future tables.
+- [ ] Point the app at the Supabase project and confirm V1 to V4 apply there;
+      turn off the Data API in the dashboard.
+      Match the Testcontainers Postgres version to the project's version.
+- [ ] **OWNER DECISION:** where the app itself is hosted (Render is already
       connected to his account; other options are fine).
 
 Done when: the app runs on Postgres from migrations alone.

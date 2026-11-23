@@ -14,6 +14,12 @@ comes next, so you can lead the work forward without being told the next step.
   pushing or opening PRs, unless he has just told you to go ahead.
 - Once he says go, finish the whole task without check-ins, and explain the
   reasoning behind decisions, not just the output.
+- Pushing is allowed to `feature/backend-spring-boot` only, and only when he
+  confirms. Finish a piece of work, show him what changed, ask whether to push,
+  and push after he says yes. The same goes for commits and PRs: a "go" for a
+  task is not a go to push or open a PR.
+- If a plan question is unanswered, ask again; never treat "continue" as a yes
+  to it.
 - Commits must be authored by him, with no Claude co-author line:
   ```
   GIT_AUTHOR_NAME="Mlungisi Leboghang Mbuyazi" GIT_AUTHOR_EMAIL="mmbuyazi63@gmail.com" \
@@ -128,6 +134,12 @@ Payout rules:
 - The database repeats key rules as constraints: one hold per lease, one open
   dispute per hold, one pending application per tenant per listing, one review
   per side per lease. Violations return 409.
+- Row level security is on for every table, with no policies (V4, plus
+  `afterMigrate.sql` for Flyway's history table), so Supabase's Data API and
+  its public anon key cannot reach any data. The backend owns the tables and is
+  not affected. Every new table must enable it in its migration;
+  `everyTableHasRowLevelSecurity` fails CI otherwise. Also turn the Data API
+  off in the Supabase dashboard when the project is connected.
 - Optimistic locking: `DepositHold`, `Dispute` and `Lease` have `@Version`, and
   their `withX()` copies carry the version, so a write from a stale read fails.
   `approve()` loads the hold with `OPTIMISTIC_FORCE_INCREMENT` because an
@@ -144,8 +156,10 @@ Payout rules:
   `feature/backend-spring-boot` (owner's instruction).
 - The backend is merged into `main` (PR #2). Backend work still goes on
   `feature/backend-spring-boot`, kept in step with `main`, with a PR per phase.
-- Runs on Postgres from Flyway migrations alone (V1 to V3). 42 tests pass,
-  including a Testcontainers Postgres integration test and concurrency tests.
+- Runs on Postgres from Flyway migrations alone (V1 to V4), checked against
+  Postgres 16. 43 tests pass in CI, including a Testcontainers Postgres
+  integration test and concurrency tests. Not yet pointed at the Supabase
+  project.
 - Testcontainers is pinned to 1.21.4 in the pom: the version Boot 3.3 brings
   cannot talk to Docker 29 or newer.
 - **What comes next:** see ROADMAP.md. Phase 1 is in review (PR open); the
@@ -153,17 +167,16 @@ Payout rules:
 
 ## Running locally
 
-```
-cd backend
-docker compose up -d     # Postgres 16 on localhost:5432
-mvn test                 # needs Docker: the Spring test starts its own Postgres
-mvn spring-boot:run
-```
+Nothing runs on the owner's machine. The database is Supabase Postgres (owner's
+decision), chosen so deployment is easy later.
 
-The `local` profile uses the compose Postgres (override with `DATABASE_URL`,
-`DATABASE_USERNAME`, `DATABASE_PASSWORD`), runs the migrations on startup, and
-seeds two admins and one checker the first time; their ids are printed in the
-startup log. Data persists between runs; `docker compose down -v` wipes it. Send a user id in the `X-Dev-User-Id` header
+- Tests run in GitHub Actions. The Spring test starts a throwaway Postgres with
+  Testcontainers there, so CI needs Docker but the owner never does.
+- The app connects to Supabase through `DATABASE_URL`, `DATABASE_USERNAME` and
+  `DATABASE_PASSWORD` (session pooler, port 5432, `sslmode=require`), and
+  Flyway applies the migrations on startup.
+- In the `local` profile it seeds two admins and one checker the first time and
+  prints their ids. Send a user id in the `X-Dev-User-Id` header
 to act as that user (`DevHeaderAuthenticationFilter`, local only). In `prod`
 nothing authenticates yet, so protected endpoints return 401 by design.
 `TenancyFlowIntegrationTest` shows the full API journey.
