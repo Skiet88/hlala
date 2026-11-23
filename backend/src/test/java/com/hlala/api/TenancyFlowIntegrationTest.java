@@ -57,6 +57,7 @@ class TenancyFlowIntegrationTest {
     @Autowired CheckerProfileRepository checkers;
     @Autowired EscrowService escrow;
     @Autowired LeaseRepository leaseRows;
+    @Autowired org.springframework.jdbc.core.JdbcTemplate jdbc;
 
     private UUID adminA;
     private UUID adminB;
@@ -189,6 +190,17 @@ class TenancyFlowIntegrationTest {
                 .isInstanceOf(OptimisticLockingFailureException.class);
         assertThat(leaseRows.findById(leaseId).orElseThrow().getTenantSignature())
                 .isEqualTo(Enums.SignatureStatus.SIGNED);
+    }
+
+    /**
+     * Supabase exposes public tables through its Data API. Every table must
+     * have row level security on (and no policies), or that API can reach it.
+     */
+    @Test
+    void everyTableHasRowLevelSecurity() {
+        List<String> open = jdbc.queryForList(
+                "select tablename from pg_tables where schemaname = 'public' and not rowsecurity", String.class);
+        assertThat(open).as("tables without row level security").isEmpty();
     }
 
     private Void approveWithOneRetry(UUID adminUserId, UUID holdId, CyclicBarrier together) throws Exception {
