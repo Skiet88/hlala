@@ -181,6 +181,27 @@ to act as that user (`DevHeaderAuthenticationFilter`, local only). In `prod`
 nothing authenticates yet, so protected endpoints return 401 by design.
 `TenancyFlowIntegrationTest` shows the full API journey.
 
+## Frontend: `frontend/` (PWA: React, TypeScript, Vite)
+
+Owner's decisions: a PWA, a mock API until real sign in, English only for now.
+
+- Screens only talk to the `ApiClient` interface (`src/api/ApiClient.ts`).
+  `MockApiClient` runs everything on sample data from the prototype;
+  `HttpApiClient` calls the backend and today only serves public listing
+  browsing, failing every other call with `NotAvailableYetError`. Pick with
+  `VITE_API_MODE=mock|http` (see `.env.example`).
+- Business rules the UI shows live as pure functions in `src/domain` (money,
+  meter split, move out settlement, deposit state words, filters), tested.
+- Design tokens and patterns: `src/styles/app.css`, from the prototype. Shared
+  pieces in `src/components`. Screens by group in `src/screens`.
+- `[YOUR FEE]` and `[PAY PER CHECK]` stay visible placeholders.
+- Routes are not a security boundary; the backend enforces access.
+- The service worker (`public/sw.js`) caches only the app shell and hashed
+  assets, never API responses.
+- `/screens` lists every screen, grouped like the prototype canvas.
+- Run: `cd frontend && npm ci && npm test && npm run build`. Nothing needs to
+  run on the owner's machine; CI does it (`.github/workflows/frontend-ci.yml`).
+
 ## Not built yet
 
 Tracked phase by phase in ROADMAP.md, including known gaps and the decisions
