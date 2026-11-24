@@ -18,7 +18,7 @@ has the order of work.
 5. If work reveals the order below is wrong, say so and propose the change. Do
    not silently reorder.
 
-Last updated: 2026-11-23, Phase 1 built: Postgres (Supabase), Flyway V1 to V4, optimistic locking, row level security. PR #3 open; app hosting still open.
+Last updated: 2026-11-24, Phase 7 frontend built on sample data (PWA, all 30 screens) on feature/frontend. Phase 1 PR #3 merged; Render chosen for the app, deploy not finished.
 
 ## Why this order
 
@@ -149,14 +149,35 @@ chat and payments.
       licensed partner (for example a bank escrow or trust account). Raise this
       before going live with real money; do not assume either way.
 
-## Phase 7: Frontend — status: TODO (can start after Phase 2)
+## Phase 7: Frontend — status: IN PROGRESS (all screens built on sample data; real data waits on Phase 2)
 
-- [ ] Build from the 30 screen prototype (link in CLAUDE.md), same palette and fonts.
-- [ ] Works on low end Android phones and is light on mobile data.
-- [ ] English and isiXhosa.
-- [ ] Admin back office as a web app (the Admin screen).
-- [ ] **OWNER DECISION:** technology, for example a PWA, React Native or
-      Flutter. Recommend with reasons; he chooses.
+The owner chose to build the frontend now, before Phase 2, on a mock API.
+It lives in `frontend/` on the `feature/frontend` branch.
+
+- [x] **OWNER DECISION:** technology: a PWA (React, TypeScript, Vite).
+- [x] **OWNER DECISION:** screens run on a mock API behind an `ApiClient`
+      interface until real sign in exists.
+- [x] **OWNER DECISION:** English only for now. isiXhosa later, written by a
+      fluent speaker, not machine translated.
+- [x] All 30 prototype screens built, same palette and fonts (fonts self hosted,
+      no Google calls), plus a screen index at `/screens` for review.
+- [x] Light for low end phones: no map or UI library, screens outside the
+      tenant's first visit load on demand, hand written service worker keeps
+      the app shell working on weak signal and never caches API data.
+- [x] Admin back office as a wide web layout (`/admin`).
+- [x] Tests: business rules, both API clients, user flows, every route (79).
+      Frontend CI runs audit, type check, tests and build.
+- [ ] Switch screens to the real API as each backend call lands (Phase 2 on).
+      `VITE_API_MODE=http` already serves public listing browsing.
+- [ ] Backend gaps the screens need: richer listing summaries (today the client
+      loads each listing in full), walking times and map positions, landlord
+      display names, chat, wanted posts, saved searches and alerts,
+      notifications feed, move out deductions (Phase 4), payments (Phase 6).
+- [ ] Real map and walking routes (needs a map provider decision).
+- [ ] In app camera capture for checker and listing photos (Phase 3).
+- [ ] isiXhosa, once a fluent translator is available.
+- [ ] Deploy as a Render static site: build `npm ci && npm run build` in
+      `frontend`, publish `frontend/dist`, rewrite `/*` to `/index.html`.
 
 ## Phase 8: Launch readiness — status: TODO
 
